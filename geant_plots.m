@@ -1,7 +1,7 @@
 % Variables:
 % Step#    X(mm)    Y(mm)    Z(mm) KinE(MeV)  dE(MeV) StepLeng TrackLeng  NextVolume ProcName
-
-fileID = fopen('run5_Li_primary.txt');
+run_num = 5;
+fileID = fopen(['run_distnew_step0' num2str(run_num) '_primary.txt']);
 formatSpec = '%f %f %f %f %f %f %f %f %s %s';
 Data = textscan(fileID, formatSpec);
 
@@ -48,14 +48,23 @@ for i=1:num_ini
     x_ini(i) = Xmm(slice_ini(i)+1);
     y_ini(i) = Ymm(slice_ini(i)+1);
 end
-disp('ok')
+%ind_ini = find(angle_ini);
+%angle_ini = angle_ini(ind_ini);
+%x_ini = x_ini(ind_ini);
+%y_ini = y_ini(ind_ini);
+disp('x ok')
+
 % Final angle of primaries at final position
 for i=1:num_final
     angle_f(i) = (Xmm(slice_f(i))-Xmm(slice_f(i)-1)) / StepLength(slice_f(i)); % go one step back than "envelope" to get the value at the exit of "Shape1"
     x_f(i) = Xmm(slice_f(i));
     y_f(i) = Ymm(slice_f(i));
 end
-
+%ind_f = find(angle_f);
+%angle_f = angle_f(ind_f);
+%x_f = x_f(ind_f);
+%y_f = y_f(ind_f);
+disp('xp ok')
 
 figure(1);
 plot3(Zmm*1e3,Xmm*1e3,Ymm*1e3,'-o')
@@ -65,7 +74,7 @@ zlabel('y (mm)')
 grid on;
 pbaspect([10 1 1])
 if (sfig == 1)
-    saveas(gca,'xyz.eps','epsc')
+    saveas(gca,['xyz' num2str(run_num) '.eps'],'epsc')
 end
 
 figure(2)
@@ -78,7 +87,7 @@ legend([h1 h2],'Initial','Final')
 xlim([-100 100])
 ylim([-100 100])
 if (sfig == 1)
-    saveas(gca,'xyif.eps','epsc')
+    saveas(gca,['xyif' num2str(run_num) '.eps'],'epsc')
 end
 
 figure(3)
@@ -94,15 +103,15 @@ grid on;
 xlim([-110 110])
 %ylim([-1 1])
 if (sfig == 1)
-    saveas(gca,'emitt_if.eps','epsc')
+    saveas(gca,['emitt_if ' num2str(run_num) '.eps'],'epsc')
 end
 
 
 %% Projections and fits
 % Projections
 % Fetch data
-numbins1 = 40;
-numbins2 = 40;
+numbins1 = 50;
+numbins2 = 50;
 figure(5)
 h1 = histfit(x_ini,numbins1);
 h1_x = get(h1(2),'XData');
@@ -134,6 +143,7 @@ x0 =[max(h4_y); 0; (h4_x(100)-h4_x(1))/4];
 xsize1 = x1(3)/sqrt(2);   % 1sigma = 68.27% x_ini
 xsize2 = x2(3)/sqrt(2);   % x_f
 xsize3 = x3(3)/sqrt(2);   % angle_ini
+xsize3 = 1e-6;
 xsize4 = x4(3)/sqrt(2);   % angle_f
 posx1 = x1(2);
 posx2 = x2(2);
@@ -146,45 +156,48 @@ figure(6)
 subplot(2,2,1)
 hist(x_ini,numbins1)
 hold on;
-plot(h1_x,h1_y,'b')
+plot(h1_x,h1_y,'ob')
 plot(h1_x,F(x1,h1_x),'r')
 hold off;
 title('Real Space')
 xlabel('x_{ini} (m)')
+%xlim([-6 6]*1e-3);
 %
 subplot(2,2,2)
 hist(x_f,numbins1)
 hold on;
-plot(h2_x,h2_y,'b')
+plot(h2_x,h2_y,'ob')
 plot(h2_x,F(x2,h2_x),'r')
 hold off;
 xlabel('x_f (m)')
+%xlim([-6 6]*1e-3);
 %
 subplot(2,2,3)
 hist(angle_ini,numbins2)
 hold on;
-plot(h3_x,h3_y,'b')
+plot(h3_x,h3_y,'ob')
 plot(h3_x,F(x3,h3_x),'r')
 hold off;
 title('Phase Space')
 xlabel('xp_{ini} (rad)')
+%xlim([-2 2]*1e-3);
 %
 subplot(2,2,4)
 hist(angle_f,numbins2)
 hold on;
-plot(h4_x,h4_y,'b')
+plot(h4_x,h4_y,'ob')
 plot(h4_x,F(x4,h4_x),'r')
 hold off;
 xlabel('xp_f (rad)')
+%xlim([-2 2]*1e-3);
 if (sfig == 1)
-    saveas(gca,'histos.eps','epsc')
+    saveas(gca,['histos' num2str(run_num) '.eps'],'epsc')
 end
 
 %% Calculate the emittance and the Twiss parameters
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Use measured, x_ini, x_f, angle_ini, angle_f
 % Retrieve the coordinates in the phase space
-
 [~,ind_1] = min(abs(x_ini-xsize1));
 [~,ind_2] = min(abs(x_f-xsize2));
 [~,ind_3] = min(abs(angle_ini-xsize3));
@@ -235,7 +248,7 @@ disp(['Emittance growth (m-rad): ' num2str(demitt)])
 disp(['Beta: ' num2str(beta_ini) ', ' num2str(beta_f)])
 disp(['Alpha: ' num2str(alpha_ini) ', ' num2str(alpha_f)])
 disp(['Gamma: ' num2str(gamma_ini) ', ' num2str(gamma_f)])
-
+disp(['Initialise next run with x_ini = ' num2str(xsize2*1000) 'mm, xp_ini = ' num2str(xsize4*1000) ' mrad.']);
 
 
 %% Normalise the phase space
@@ -261,15 +274,16 @@ grid on;
 xlim([-20 20]*1e-3)
 ylim([-20 20]*1e-3)
 if (sfig == 1)
-    saveas(gca,'norm,_phasespace.eps','epsc')
+    saveas(gca,['norm_phasespace' num2str(run_num) '.eps'],'epsc')
 end
 
 
 
 
-
-
-
+%%
+for i=1:1000
+disp([num2str(x_f(i)) ' ' num2str(angle_f(i))]);
+end
 
 
 
