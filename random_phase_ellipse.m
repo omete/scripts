@@ -1,7 +1,7 @@
 % Random phase space
 x0  = 5;
 xp0 = 2*pi;
-alpha = -10;
+alpha = 10;
 R1 = normrnd(0,x0,[1 1000]);
 R2 = normrnd(0,xp0,[1 1000]);
 

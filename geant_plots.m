@@ -1,6 +1,6 @@
 % Variables:
 % Step#    X(mm)    Y(mm)    Z(mm) KinE(MeV)  dE(MeV) StepLeng TrackLeng  NextVolume ProcName
-run_num = 5;
+run_num = 1;
 fileID = fopen(['run_distnew_step0' num2str(run_num) '_primary.txt']);
 formatSpec = '%f %f %f %f %f %f %f %f %s %s';
 Data = textscan(fileID, formatSpec);
@@ -28,13 +28,16 @@ Zmm        = Data{4}*1e-3; %m
 StepLength = Data{7}*1e-3; %m
 Shape1     = Data{9};
 
+
 sfig = 1; %  to save figures
 %% Real and phase space
 
 indx = max(size(StepLength));
 % give the longitudinal coordinate of the selected slice -- the last z point of the simulation.
-slice_ini = find(Step == 0 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at initial position
-slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
+%slice_ini = find(Step == 0 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at initial position
+slice_ini = find(Step == 0 & ((Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at initial position
+%slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
+slice_f   = find(ismember(Shape1,'OutOfWorld') &  ((Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at final position
 %slice_f   = find(Zmm == 5e+02 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
 % Calculate the final angles of the primary particles at the initial and
 % the final StepLength
@@ -42,12 +45,20 @@ slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm) <= 0.1) & (abs(Ymm) <
 num_ini = max(size(slice_ini));  %number of initial particles
 num_final = max(size(slice_f));  %number of final particles 
 
+% Calculate mean initial angles from first snum sample step
 % Final angle of primaries at initial position
+snum = 1; 
 for i=1:num_ini
-    angle_ini(i) = (Xmm(slice_ini(i)+1)-Xmm(slice_ini(i))) / StepLength(slice_ini(i)+1);
-    x_ini(i) = Xmm(slice_ini(i)+1);
-    y_ini(i) = Ymm(slice_ini(i)+1);
+    for j=1:snum %collect samples to calculate mean angle for each particle
+        sangle_ini(i,j) = (Xmm(slice_ini(i)+1+j-1)-Xmm(slice_ini(i)+j-1)) / StepLength(slice_ini(i)+1+j-1);
+        sx_ini(i,j)     = Xmm(slice_ini(i)+1+j-1);
+        sy_ini(i,j)     = Ymm(slice_ini(i)+1+j-1);
+    end
+    angle_ini(i) = mean(sangle_ini(i,:));
+    x_ini(i)     = mean(sx_ini(i,:));
+    y_ini(i)     = mean(sy_ini(i,:));
 end
+
 %ind_ini = find(angle_ini);
 %angle_ini = angle_ini(ind_ini);
 %x_ini = x_ini(ind_ini);
@@ -56,9 +67,14 @@ disp('x ok')
 
 % Final angle of primaries at final position
 for i=1:num_final
-    angle_f(i) = (Xmm(slice_f(i))-Xmm(slice_f(i)-1)) / StepLength(slice_f(i)); % go one step back than "envelope" to get the value at the exit of "Shape1"
-    x_f(i) = Xmm(slice_f(i));
-    y_f(i) = Ymm(slice_f(i));
+    for j=1:snum
+        sangle_f(i,j) = (Xmm(slice_f(i)-j+1)-Xmm(slice_f(i)-1-j+1)) / StepLength(slice_f(i)-j+1); % go one step back than "envelope" to get the value at the exit of "Shape1"
+        sx_f(i,j) = Xmm(slice_f(i)-j+1);
+        sy_f(i,j) = Ymm(slice_f(i)-j+1);
+    end
+    angle_f(i) = mean(sangle_f(i,:));
+    x_f(i)     = mean(sx_f(i,:));
+    y_f(i)     = mean(sy_f(i,:));
 end
 %ind_f = find(angle_f);
 %angle_f = angle_f(ind_f);
@@ -73,6 +89,9 @@ ylabel('x (mm)')
 zlabel('y (mm)')
 grid on;
 pbaspect([10 1 1])
+%ylim([-30 30]);
+%zlim([-30 30]);
+%ylim([-100 100]);
 if (sfig == 1)
     saveas(gca,['xyz' num2str(run_num) '.eps'],'epsc')
 end
@@ -84,24 +103,21 @@ h1 = plot(x_ini*1e3,y_ini*1e3,'or','linewidth',2)
 xlabel('x position (mm)')
 ylabel('y position (mm)')
 legend([h1 h2],'Initial','Final')
-xlim([-100 100])
-ylim([-100 100])
 if (sfig == 1)
     saveas(gca,['xyif' num2str(run_num) '.eps'],'epsc')
 end
 
 figure(3)
-plot(x_ini*1e3,angle_ini,'ro')
+plot(x_f*1e3,angle_f*1e3,'bo')
 hold on;
-plot(x_f*1e3,angle_f,'bo')
-plot(x_ini*1e3,angle_ini,'ro')
+plot(x_ini*1e3,angle_ini*1e3,'ro')
 hold off;
 xlabel('x  (mm)')
-ylabel('xp  (rad)')
-legend('Initial','Final','Initial')
+ylabel('xp  (mrad)')
+legend('Final','Initial')
 grid on;
-xlim([-110 110])
-%ylim([-1 1])
+xlim([-4 4])
+ylim([-.4 .4])
 if (sfig == 1)
     saveas(gca,['emitt_if ' num2str(run_num) '.eps'],'epsc')
 end
@@ -111,8 +127,7 @@ end
 % Projections
 % Fetch data
 numbins1 = 50;
-numbins2 = 50;
-figure(5)
+numbins2 = 30;
 h1 = histfit(x_ini,numbins1);
 h1_x = get(h1(2),'XData');
 h1_y = get(h1(2),'YData');
@@ -143,7 +158,6 @@ x0 =[max(h4_y); 0; (h4_x(100)-h4_x(1))/4];
 xsize1 = x1(3)/sqrt(2);   % 1sigma = 68.27% x_ini
 xsize2 = x2(3)/sqrt(2);   % x_f
 xsize3 = x3(3)/sqrt(2);   % angle_ini
-xsize3 = 1e-6;
 xsize4 = x4(3)/sqrt(2);   % angle_f
 posx1 = x1(2);
 posx2 = x2(2);
@@ -206,14 +220,14 @@ end
 % Confidence 
 sig = 1;
 
-xmax_x = sig*[xsize1 xsize2]; %x1, measured
+xmax_x = sig*[xsize1 xsize2];     %x1, measured
 xmax_y(1) = sig*angle_ini(ind_1); %x2 initial, retrieved 
 xmax_y(2) = sig*angle_f(ind_2);   %x2 final, retrieved
 
-xpmax_y = sig*[xsize3 xsize4];%xp2, measured
+xpmax_y = sig*[xsize3 xsize4];    %xp2, measured
 xpmax_x(1) = sig*x_ini(ind_3);    %xp1 initial, retrieved   
 xpmax_x(2) = sig*x_f(ind_4);      %xp1 final, retrieved
-                                          %xp2, measured
+                                         
 
 %emittance_i = (xmax_x(1)*xpmax_y(1))*(xmax_y(1)*xpmax_x(1))+(xmax_x(1)*xpmax_y(1))^2;
 %emittance_f = (xmax_x(2)*xpmax_y(2))*(xmax_y(2)*xpmax_x(2))+(xmax_x(2)*xpmax_y(2))^2;
