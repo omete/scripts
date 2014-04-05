@@ -1,43 +1,45 @@
-% Variables:
+%% Variables:
 % Step#    X(mm)    Y(mm)    Z(mm) KinE(MeV)  dE(MeV) StepLeng TrackLeng  NextVolume ProcName
-run_num = 1;
-fileID = fopen(['run_distnew_step0' num2str(run_num) '_primary.txt']);
+% Command line import 
+close all;
+clear;
+clc;
+
+run_num = 8;
+fileID = fopen(['run_distnew3_step0' num2str(run_num) '_primary.txt']);
 formatSpec = '%f %f %f %f %f %f %f %f %s %s';
 Data = textscan(fileID, formatSpec);
-
-%VarName1 = Data{1};
-%VarName2 = Data{2};
-%VarName3 = Data{3};
-%VarName4 = Data{4};
-%VarName7=Data{7};
-%Shape1 = Data{9};
-
-% Assign some parameters
-part_num = length(Data{1});
-
-%Step = VarName1(1:part_num);
-%StepLength = VarName7(1:part_num)*1e-3; % m
-%Xmm  = VarName2(1:part_num)*1e-3;       % m
-%Ymm  = VarName3(1:part_num)*1e-3;       % m 
-%Zmm  = VarName4(1:part_num)*1e-3;       % m 
+fclose(fileID);
 
 Step       = Data{1};
 Xmm        = Data{2}*1e-3; %m
 Ymm        = Data{3}*1e-3; %m
 Zmm        = Data{4}*1e-3; %m
+KinE       = Data{5};
+dE         = Data{6};
 StepLength = Data{7}*1e-3; %m
 Shape1     = Data{9};
 
+sfig = 0; %  to save figures
+%% Use after interactive data import
+% Assign some parameters
+part_num = length(Shape1);
+
+Step = VarName1(1:part_num);
+StepLength = VarName7(1:part_num)*1e-3; % m
+Xmm  = VarName2(1:part_num)*1e-3;       % m
+Ymm  = VarName3(1:part_num)*1e-3;       % m 
+Zmm  = VarName4(1:part_num)*1e-3;       % m 
 
 sfig = 1; %  to save figures
 %% Real and phase space
 
-indx = max(size(StepLength));
+indx = length(StepLength);
 % give the longitudinal coordinate of the selected slice -- the last z point of the simulation.
 %slice_ini = find(Step == 0 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at initial position
-slice_ini = find(Step == 0 & ((Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at initial position
+slice_ini = find((Step == 0) & (Zmm == 0) & (abs(Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at initial position
 %slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
-slice_f   = find(ismember(Shape1,'OutOfWorld') &  ((Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at final position
+slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at final position
 %slice_f   = find(Zmm == 5e+02 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
 % Calculate the final angles of the primary particles at the initial and
 % the final StepLength
@@ -47,7 +49,7 @@ num_final = max(size(slice_f));  %number of final particles
 
 % Calculate mean initial angles from first snum sample step
 % Final angle of primaries at initial position
-snum = 1; 
+snum = 50; 
 for i=1:num_ini
     for j=1:snum %collect samples to calculate mean angle for each particle
         sangle_ini(i,j) = (Xmm(slice_ini(i)+1+j-1)-Xmm(slice_ini(i)+j-1)) / StepLength(slice_ini(i)+1+j-1);
@@ -58,11 +60,6 @@ for i=1:num_ini
     x_ini(i)     = mean(sx_ini(i,:));
     y_ini(i)     = mean(sy_ini(i,:));
 end
-
-%ind_ini = find(angle_ini);
-%angle_ini = angle_ini(ind_ini);
-%x_ini = x_ini(ind_ini);
-%y_ini = y_ini(ind_ini);
 disp('x ok')
 
 % Final angle of primaries at final position
@@ -76,11 +73,18 @@ for i=1:num_final
     x_f(i)     = mean(sx_f(i,:));
     y_f(i)     = mean(sy_f(i,:));
 end
-%ind_f = find(angle_f);
-%angle_f = angle_f(ind_f);
-%x_f = x_f(ind_f);
-%y_f = y_f(ind_f);
 disp('xp ok')
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% % Check against Inf numbers --- BUG to be corrected.%%%%%%%%%%%%%%%
+%angle_ini = angle_ini(find(~isinf(angle_ini)));
+%x_ini = x_ini(find(~isinf(angle_ini)));
+%y_ini = y_ini(find(~isinf(angle_ini)));
+
+%angle_f = angle_f(find(~isinf(angle_f)));
+%x_f = x_f(find(~isinf(angle_f)));
+%y_f = y_f(find(~isinf(angle_f)));
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 figure(1);
 plot3(Zmm*1e3,Xmm*1e3,Ymm*1e3,'-o')
@@ -116,8 +120,8 @@ xlabel('x  (mm)')
 ylabel('xp  (mrad)')
 legend('Final','Initial')
 grid on;
-xlim([-4 4])
-ylim([-.4 .4])
+%xlim([-4 4])
+%ylim([-.4 .4])
 if (sfig == 1)
     saveas(gca,['emitt_if ' num2str(run_num) '.eps'],'epsc')
 end
@@ -126,8 +130,9 @@ end
 %% Projections and fits
 % Projections
 % Fetch data
-numbins1 = 50;
+numbins1 = 30;
 numbins2 = 30;
+figure(5);
 h1 = histfit(x_ini,numbins1);
 h1_x = get(h1(2),'XData');
 h1_y = get(h1(2),'YData');
@@ -232,34 +237,32 @@ xpmax_x(2) = sig*x_f(ind_4);      %xp1 final, retrieved
 %emittance_i = (xmax_x(1)*xpmax_y(1))*(xmax_y(1)*xpmax_x(1))+(xmax_x(1)*xpmax_y(1))^2;
 %emittance_f = (xmax_x(2)*xpmax_y(2))*(xmax_y(2)*xpmax_x(2))+(xmax_x(2)*xpmax_y(2))^2;
 
-xmax_x = abs(xmax_x);
-xmax_y = abs(xmax_y);
-xpmax_x = abs(xpmax_x);
-xpmax_y = abs(xpmax_y);
+%xmax_x = abs(xmax_x);
+%xmax_y = abs(xmax_y);
+%xpmax_x = abs(xpmax_x);
+%xpmax_y = abs(xpmax_y);
 
 emittance_i = sqrt( (xmax_x(1)*xpmax_y(1))^2 + (xmax_x(1)*xpmax_y(1))*(xmax_y(1)*xpmax_x(1)) );
-emitt_in = (10000/0.511)*emittance_i;
+%emitt_in = (10000/0.511)*emittance_i;
 emittance_f = sqrt( (xmax_x(2)*xpmax_y(2))^2 + (xmax_x(2)*xpmax_y(2))*(xmax_y(2)*xpmax_x(2))  );
-emitt_fn = (10000/0.511)*emittance_f;
+%emitt_fn = (10000/0.511)*emittance_f;
 
 % Twiss parameters
-
-alpha_ini = (xmax_x(1)*xmax_y(1))/emittance_i;
-alpha_f   = (xmax_x(2)*xmax_y(2))/emittance_f;
-
 beta_ini = (xmax_x(1)^2) / emittance_i;
 beta_f   = (xmax_x(2)^2) / emittance_f;
 
 gamma_ini = (xpmax_y(1)^2)/ emittance_i;
 gamma_f   = (xpmax_y(2)^2)/ emittance_f;
 
-demitt = emitt_fn-emitt_in;
+alpha_ini = xpmax_x(1)*sqrt(gamma_ini/emittance_i);
+alpha_f   = xpmax_x(2)*sqrt(gamma_f/emittance_f);
 
+demitt = emittance_f-emittance_i;
 
 disp(['Geometric Emittance (m-rad): ' num2str(emittance_i) ', ' num2str(emittance_f)])
-disp(['Normalised Emittance (m-rad): ' num2str(emitt_in) ', ' num2str(emitt_fn)])
-disp(['Emittance growth (m-rad): ' num2str(demitt)])
-disp(['Beta: ' num2str(beta_ini) ', ' num2str(beta_f)])
+%disp(['Normalised Emittance (m-rad): ' num2str(emitt_in) ', ' num2str(emitt_fn)])
+disp(['Emittance growth (m-rad): ' num2str(demitt)]);
+disp(['Beta: ' num2str(beta_ini) ', ' num2str(beta_f)]);
 disp(['Alpha: ' num2str(alpha_ini) ', ' num2str(alpha_f)])
 disp(['Gamma: ' num2str(gamma_ini) ', ' num2str(gamma_f)])
 disp(['Initialise next run with x_ini = ' num2str(xsize2*1000) 'mm, xp_ini = ' num2str(xsize4*1000) ' mrad.']);
@@ -285,24 +288,52 @@ hold off;
 %ylabel('xp  (mrad)')
 legend('Final','Initial')
 grid on;
-xlim([-20 20]*1e-3)
-ylim([-20 20]*1e-3)
+%xlim([-20 20]*1e-5)
+%ylim([-20 20]*1e-5)
 if (sfig == 1)
     saveas(gca,['norm_phasespace' num2str(run_num) '.eps'],'epsc')
 end
 
 
 
+%% WHEN SORTED GAUSSIAN ENERGY DISTRIBUTION -- TO BE DONE IN SUMMER 2014
+% Energy distribution
 
-%%
-for i=1:1000
-disp([num2str(x_f(i)) ' ' num2str(angle_f(i))]);
-end
+figure(8)
+subplot(1,2,1)
+he1 = histfit(KinE(slice_ini),10);
+he1x = get(he1(2),'XData');
+he1y = get(he1(2),'YData');
+xlabel('Initial')
+subplot(1,2,2)
+he2 = histfit(KinE(slice_f),10);
+he2x = get(he1(2),'XData');
+he2y = get(he1(2),'YData');
+xlabel('Final')
+
+% Model: Gaussian distribution 
+F = @(x,xdata)x(1)*exp(-((xdata-x(2))/x(3)).^2);
+% Initial values
+% Perform the fittings  
+x0 =[max(he1y); 0; (he1x(100)-he1x(1))/4];
+[xe1,resnorm1,~,exitflag1,output1] = lsqcurvefit(F,x0,he1x,he1y);
+x0 =[max(he2y); 0; (he2x(100)-he2x(1))/4];
+[xe2,resnorm2,~,exitflag2,output2] = lsqcurvefit(F,x0,he2x,he2y);
 
 
+figure(8)
+subplot(1,2,1)
+h1 = histfit(KinE(slice_ini),20);
+hold on;
+plot(he1x,he1y,'ob')
+plot(he1x,F(xe1,he1x),'r')
+hold off;
+xlabel('Initial')
+subplot(1,2,2)
+h2 = histfit(KinE(slice_f),20);
 
-
-
-
-
-
+hold on;
+plot(he2x,he2y,'ob')
+plot(he2x,F(xe2,he2x),'r')
+hold off;
+xlabel('Final')
