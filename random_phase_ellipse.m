@@ -4,9 +4,9 @@
 clear; 
 %clc;
 %format long;
-x0  = 0.0058412;     % m
-xp0 = 0.0000778420;     % rad 
-alpha = 1.0044;
+x0  = 0.0003443;     % m
+xp0 = 0.000029023;     % rad 
+alpha = 0.59018;
 R1 = normrnd(0,x0,[1 1000]);
 R2 = normrnd(0,xp0,[1 1000]);
 
@@ -25,6 +25,7 @@ subplot(1,2,2)
 h2= histfit(xp,50);
 legend('xp')
 
+
 [~,ind0_1] = min(abs(x-x0));
 [~,ind0_2] = min(abs(xp-xp0));
 
@@ -38,11 +39,24 @@ xpmax_x = x(ind0_2);
 
 
 % %%%%%%%% Calculate the phase space %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-emitt0 = sqrt( (xmax_x*xpmax_y)^2 - (xmax_x*xpmax_y)*(xmax_y*xpmax_x) );
+% Method 1
+%emitt0 = sqrt( (xmax_x*xpmax_y)^2 - (xmax_x*xpmax_y)*(xmax_y*xpmax_x) );
+
+% %%%%%%%%%%%%%%%%%%%%%%
+% Method 2
+% rms values
+xrms   = rms(x-mean(x));
+xprms  = rms(xp-mean(xp));
+% second terms
+xxp = sum(   (x-mean(x)).*(xp-mean(xp)) ) / 1000;
+emitt0 = sqrt(  xrms^2*xprms^2-xxp^2  );
+% %%%%%%%%%%%%%%%%%%%%%%
+
+% Twiss parameters
 beta0 = (xmax_x^2) / emitt0;
 gamma0 = (xpmax_y^2)/ emitt0;
-alpha0 = (xpmax_x)*sqrt(gamma0/emitt0);
-
+alpha0 = -(xpmax_x)*sqrt(gamma0/emitt0);
+% Display
 disp(['Geometric Emittance (m-rad): ' num2str(emitt0)]);
 disp(['Beta: ' num2str(beta0)]);
 disp(['Alpha: ' num2str(alpha0)]);

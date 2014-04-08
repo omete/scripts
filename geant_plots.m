@@ -5,11 +5,16 @@ close all;
 clear;
 clc;
 
-run_num = 8;
-fileID = fopen(['run_distnew3_step0' num2str(run_num) '_primary.txt']);
+run_num = 3;
+fileID = fopen(['run_distnew4_step0' num2str(run_num) '_primary.txt']);
 formatSpec = '%f %f %f %f %f %f %f %f %s %s';
 Data = textscan(fileID, formatSpec);
 fclose(fileID);
+
+%fileID = fopen(['run_distnew4_step0' num2str(run_num) '_primary_f.txt']);
+%formatSpec = '%f %f %f %f %f %f %f %f %s %s';
+%Data2 = textscan(fileID, formatSpec);
+%fclose(fileID);
 
 Step       = Data{1};
 Xmm        = Data{2}*1e-3; %m
@@ -21,17 +26,17 @@ StepLength = Data{7}*1e-3; %m
 Shape1     = Data{9};
 
 sfig = 0; %  to save figures
-%% Use after interactive data import
-% Assign some parameters
-part_num = length(Shape1);
 
-Step = VarName1(1:part_num);
-StepLength = VarName7(1:part_num)*1e-3; % m
-Xmm  = VarName2(1:part_num)*1e-3;       % m
-Ymm  = VarName3(1:part_num)*1e-3;       % m 
-Zmm  = VarName4(1:part_num)*1e-3;       % m 
+% Use after interactive data import
+% % Assign some parameters
+%part_num = length(Shape1);
 
-sfig = 1; %  to save figures
+%Step = VarName1(1:part_num);
+%StepLength = VarName7(1:part_num)*1e-3; % m
+%Xmm  = VarName2(1:part_num)*1e-3;       % m
+%Ymm  = VarName3(1:part_num)*1e-3;       % m 
+%Zmm  = VarName4(1:part_num)*1e-3;       % m 
+%sfig = 1; %  to save figures
 %% Real and phase space
 
 indx = length(StepLength);
@@ -76,13 +81,13 @@ end
 disp('xp ok')
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Check against Inf numbers --- BUG to be corrected.%%%%%%%%%%%%%%%
-%angle_ini = angle_ini(find(~isinf(angle_ini)));
-%x_ini = x_ini(find(~isinf(angle_ini)));
-%y_ini = y_ini(find(~isinf(angle_ini)));
+angle_ini = angle_ini(find(~isinf(angle_ini)));
+x_ini = x_ini(find(~isinf(angle_ini)));
+y_ini = y_ini(find(~isinf(angle_ini)));
 
-%angle_f = angle_f(find(~isinf(angle_f)));
-%x_f = x_f(find(~isinf(angle_f)));
-%y_f = y_f(find(~isinf(angle_f)));
+angle_f = angle_f(find(~isinf(angle_f)));
+x_f = x_f(find(~isinf(angle_f)));
+y_f = y_f(find(~isinf(angle_f)));
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -142,6 +147,7 @@ h2_y = get(h2(2),'YData');
 h3 = histfit(angle_ini,numbins2);
 h3_x = get(h3(2),'XData');
 h3_y = get(h3(2),'YData');
+
 h4 = histfit(angle_f,numbins2);
 h4_x = get(h4(2),'XData');
 h4_y = get(h4(2),'YData');
@@ -234,18 +240,33 @@ xpmax_x(1) = sig*x_ini(ind_3);    %xp1 initial, retrieved
 xpmax_x(2) = sig*x_f(ind_4);      %xp1 final, retrieved
                                          
 
-%emittance_i = (xmax_x(1)*xpmax_y(1))*(xmax_y(1)*xpmax_x(1))+(xmax_x(1)*xpmax_y(1))^2;
-%emittance_f = (xmax_x(2)*xpmax_y(2))*(xmax_y(2)*xpmax_x(2))+(xmax_x(2)*xpmax_y(2))^2;
-
 %xmax_x = abs(xmax_x);
 %xmax_y = abs(xmax_y);
 %xpmax_x = abs(xpmax_x);
 %xpmax_y = abs(xpmax_y);
 
-emittance_i = sqrt( (xmax_x(1)*xpmax_y(1))^2 + (xmax_x(1)*xpmax_y(1))*(xmax_y(1)*xpmax_x(1)) );
+% Method 1
+%emittance_i = sqrt( (xmax_x(1)*xpmax_y(1))^2 - (xmax_x(1)*xpmax_y(1))*(xmax_y(1)*xpmax_x(1)) );
 %emitt_in = (10000/0.511)*emittance_i;
-emittance_f = sqrt( (xmax_x(2)*xpmax_y(2))^2 + (xmax_x(2)*xpmax_y(2))*(xmax_y(2)*xpmax_x(2))  );
+%emittance_f = sqrt( (xmax_x(2)*xpmax_y(2))^2 - (xmax_x(2)*xpmax_y(2))*(xmax_y(2)*xpmax_x(2))  );
 %emitt_fn = (10000/0.511)*emittance_f;
+
+% Method 2
+% rms values
+xi   = rms(x_ini-mean(x_ini));
+xpi  = rms(angle_ini-mean(angle_ini));
+xf   = rms(x_f-mean(x_f));
+xpf  = rms(angle_f-mean(angle_f));
+
+
+% second terms
+xxpi = sum(   (x_ini-mean(x_ini)).*(angle_ini-mean(angle_ini)) ) / 1000;
+
+xxpf = sum(   (x_f-mean(x_f)).*(angle_f-mean(angle_f)) ) / 1000;
+
+emittance_i = sqrt(  xi^2*xpi^2-xxpi^2  );
+emittance_f = sqrt(  xf^2*xpf^2-xxpf^2  );
+
 
 % Twiss parameters
 beta_ini = (xmax_x(1)^2) / emittance_i;
