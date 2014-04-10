@@ -4,9 +4,9 @@
 clear; 
 %clc;
 %format long;
-x0  = 0.0003443;     % m
-xp0 = 0.000029023;     % rad 
-alpha = 0.59018;
+x0  = 0.001*1e-3;     % m
+xp0 = 0.001*1e-3;     % rad 
+alpha = -4;
 R1 = normrnd(0,x0,[1 1000]);
 R2 = normrnd(0,xp0,[1 1000]);
 
@@ -65,7 +65,8 @@ disp(['Gamma: ' num2str(gamma0)]);
 
 figure(30)
 h20 = plot(x,xp,'o');
-legend(['\epsilon: ' num2str(emitt0) ', \beta: ' num2str(beta0) ', \alpha: ' num2str(alpha0)]);
+%legend(['\epsilon: ' num2str(emitt0) ', \beta: ' num2str(beta0) ', \alpha: ' num2str(alpha0)]);
+legend(['\epsilon: ' num2str(round(emitt0))]);
 title('Initial emittance generated for Geant4 simulations.')
 %%
 saveas(h20,['initial_emitt_' num2str(x0*1000) '_' num2str(xp0*1000) '.fig']);

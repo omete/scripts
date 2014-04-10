@@ -5,7 +5,7 @@ close all;
 clear;
 clc;
 
-run_num = 3;
+run_num = 13;
 fileID = fopen(['run_distnew4_step0' num2str(run_num) '_primary.txt']);
 formatSpec = '%f %f %f %f %f %f %f %f %s %s';
 Data = textscan(fileID, formatSpec);
@@ -25,7 +25,7 @@ dE         = Data{6};
 StepLength = Data{7}*1e-3; %m
 Shape1     = Data{9};
 
-sfig = 0; %  to save figures
+sfig = 1; %  to save figures
 
 % Use after interactive data import
 % % Assign some parameters
@@ -54,7 +54,7 @@ num_final = max(size(slice_f));  %number of final particles
 
 % Calculate mean initial angles from first snum sample step
 % Final angle of primaries at initial position
-snum = 50; 
+snum = 49; 
 for i=1:num_ini
     for j=1:snum %collect samples to calculate mean angle for each particle
         sangle_ini(i,j) = (Xmm(slice_ini(i)+1+j-1)-Xmm(slice_ini(i)+j-1)) / StepLength(slice_ini(i)+1+j-1);
@@ -81,13 +81,13 @@ end
 disp('xp ok')
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % % Check against Inf numbers --- BUG to be corrected.%%%%%%%%%%%%%%%
-angle_ini = angle_ini(find(~isinf(angle_ini)));
-x_ini = x_ini(find(~isinf(angle_ini)));
-y_ini = y_ini(find(~isinf(angle_ini)));
+%angle_ini = angle_ini(find(~isinf(angle_ini)));
+%x_ini = x_ini(find(~isinf(angle_ini)));
+%y_ini = y_ini(find(~isinf(angle_ini)));
 
-angle_f = angle_f(find(~isinf(angle_f)));
-x_f = x_f(find(~isinf(angle_f)));
-y_f = y_f(find(~isinf(angle_f)));
+%angle_f = angle_f(find(~isinf(angle_f)));
+%x_f = x_f(find(~isinf(angle_f)));
+%y_f = y_f(find(~isinf(angle_f)));
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -135,8 +135,8 @@ end
 %% Projections and fits
 % Projections
 % Fetch data
-numbins1 = 30;
-numbins2 = 30;
+numbins1 = 50;
+numbins2 = 50;
 figure(5);
 h1 = histfit(x_ini,numbins1);
 h1_x = get(h1(2),'XData');
@@ -264,8 +264,8 @@ xxpi = sum(   (x_ini-mean(x_ini)).*(angle_ini-mean(angle_ini)) ) / 1000;
 
 xxpf = sum(   (x_f-mean(x_f)).*(angle_f-mean(angle_f)) ) / 1000;
 
-emittance_i = sqrt(  xi^2*xpi^2-xxpi^2  );
-emittance_f = sqrt(  xf^2*xpf^2-xxpf^2  );
+emittance_i = sqrt(  (xi^2*xpi^2)-(xxpi^2)  );
+emittance_f = sqrt(  (xf^2*xpf^2)-(xxpf^2)  );
 
 
 % Twiss parameters
