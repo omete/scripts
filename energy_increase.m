@@ -34,12 +34,6 @@ emitt = [1.4681e-12 9.6878e-10 3.2906e-9 6.5801e-9 8.5537e-8 1.5521e-7 3.6629e-7
 err = [7.2943e-13 6.8647e-10 1.5287e-9 1.6830e-9 7.9035e-9 8.1337e-8 1.1518e-7 1.0877e-7 1.1105e-7 4.0877e-7 4.5346e-7 5.9929e-7 8.9951e-7 7.0960e-7];
 beta = [10.652 15.069 16.7716 23.2933 84.8684 71.5894 74.2311 67.3084 78.445 78.7795 93.558 84.5688 74.8135];
 
-% Emittance growth
-emitt_growth(1) = 0;
-for i=1:length(emitt)-1
-    emitt_growth(i+1) = emitt(i+1)-emitt(i);
-end
-
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%% Implementation of the theoretical curve %%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -50,6 +44,8 @@ Ra = 1e-10;     % Atomic radius of Lithium
 Z  = 3;         % Atomic number of Lithium
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% PAC07 Dr. Kirby %%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+for i=1
 % S term
 S = Q*( log(Rb/Ra) + (1.78*Z*(Z+1)*log(287/sqrt(Z)))/(Q^2)  );
 % Energy term
@@ -58,34 +54,27 @@ e_term(1) = 0;
 for i=1:length(E)-1
     e_term(i+1) = sqrt(E(i+1)/Ee) - sqrt(E(i)/Ee);
 end
-demitt_theory = sqrt(2)*r0*S*e_term*pi/(E(i)/Ee); %un-normalise
+demitt_theory = sqrt(2)*r0*S*e_term*(180)/(E(i)/Ee); %un-normalise
 % un-normalise
 %demitt_theory = demitt_theory.*(pi./(E./Ee));
 
 % Emittance curve
-emitt_theory(1) = 0;
 %emitt_theory(1) = 0;
+emitt_theory(1) = emitt(1);
 for i=1:length(E)-1
     emitt_theory(i+1) = sqrt(emitt_theory(i)^2 + demitt_theory(i)^2);  %geometric
 end
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% TOR KEK Report 92-7 %%%%%%%%%%%%%%%%%%%%%%
-alf = 1;
-
+end
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% O. Mete  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 % Constants
-%tau = 6.6667*10^-6;
-tau = 1.6e-6;
-g = 0.495; %GeV/m
-%beta = 2*10^-2;
-%Z = 3;
-ngas = 6*10^20;
-gamma0 = 10000/0.511;
-c = 3*10^8; 
-me = 9.1*10^-31;
-theta_max = pi/2;   % 1mrad
-r0 = 2.8179403267*10^-15;
-hbar = 6.58211928*10^-16;
+ngas = 6*10^20;   % m^-3
+c = 3*10^8; % m/s
+theta_max = 2*pi;   % degrees
+r0 = 2.8179403267*10^-15; % Classical electron radius, m
+hbar = 6.58211928*10^-16; %eV.s
 
 % Average along the plasma channel
 for i=1:length(x_)-1
@@ -93,67 +82,69 @@ for i=1:length(x_)-1
 end
 
 % Set theta_min
+%for i=1:length(x_)-1
+%theta_min(i) = hbar/((E_(i+1)/Ee)*me*c*152e-12);
+%end
 for i=1:length(x_)-1
-theta_min(i) = hbar/((g*x_(i+1)+gamma0)*me*c*152e-15);
-end
-% Angular part
-for i=1:length(x_)-1
-Ang(i) = (pi/(2*theta_max))*(3*theta_min(i)*atan(theta_max/theta_min(i)) + theta_max*(log(theta_min(i)^2+theta_max^2)-2));
-end
-% Emittance 
-for i=1:length(x_)-1
-demitt_theory2(i) = ((2*Z*r0)^2/(g*x_(i+1)+gamma0))*(tau/2)*Av(i)*Ang(i); 
-demitt_theory2(i) = demitt_theory2(i)*pi/(E_(i+1)/Ee); %un-normalise;
+theta_min(i) = Z^(1/3)*(1/(1.4*hbar*c))*(1/(E_(i+1)/Ee));
 end
 
-%emitt_theory2(1)=0;
+% Conversion to degrees
+%theta_min = (180/pi)*theta_min;
+
+% Angular part
+for i=1:length(x_)-1
+%Ang(i) = (pi/(2*theta_max))*(3*theta_min(i)*atan(theta_max/theta_min(i)) + theta_max*(log(theta_min(i)^2+theta_max^2)-2));
+Ang(i) = log((theta_min(i)^2 + theta_max^2) / theta_min(i)^2) - (theta_max^2/(theta_min(i)^2 + theta_max^2)); 
+end
+
+  
+% Emittance
+for i=1:length(x_)-1
+demitt_theory2(i) = (2*pi*(Z*r0)^2*Av(i)*Ang(i))/(E_(i+1)/Ee);
+demitt_theory2(i) = demitt_theory2(i)*pi/(E_(i+1)/Ee); % *pi/(E_(i+1)/Ee) for un-normalise (pi/gamma);
+end
+
+
 emitt_theory2(1)=emitt(1);
 for i=1:length(E_)-1
     emitt_theory2(i+1) = sqrt(emitt_theory2(i)^2 + demitt_theory2(i)^2);  %geometric
 end
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Emittance with a factor
+for i=1:length(x_)-1
+%demitt_theory2(i) = ((2*Z*r0)^2/(g*x_(i+1)*1e9+gamma0))*(tau/2)*Av(i)*Ang(i); 
+demitt_theory2n(i) = (2*pi*(Z*r0)^2*Av(i)*Ang(i))/(E_(i+1)/Ee);
+demitt_theory2n(i) = demitt_theory2n(i)*600*pi/(E_(i+1)/Ee); % *pi/(E_(i+1)/Ee) for un-normalise (pi/gamma);
+end
+
+emitt_theory2n(1)=emitt(1);
+for i=1:length(E_)-1
+    emitt_theory2n(i+1) = sqrt(emitt_theory2n(i)^2 + demitt_theory2n(i)^2);  %geometric
+end
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-grey = [0.4 0.3 0.6];
+%grey = [0.4 0.3 0.6];
 figure(1)
 h1 = errorbar(x_,emitt*1e6, err*1e6,'ob');
 hold on;
 %errorbar(x_,emitt_growth*1e6,err*1e6,'mo');
-h2 = plot(x,emitt_theory*1e6,'--k','linewidth',2);
-h3 = plot(x_,emitt_theory2*1e6,'--r','linewidth',2);
-set(gca,'yscale','log','YColor',grey)
+%h2 = plot(x,emitt_theory*1e6,'--k','linewidth',2);
+h3 = plot(x_,emitt_theory2*1e6,'--og','linewidth',1);
+h4 = plot(x_,emitt_theory2n*1e6,'--or','linewidth',1);
+errorbar(x_,emitt*1e6, err*1e6,'ob');
+plot(500, (0.02*1e-9)*1e6,'ok','linewidth',2);
+%set(gca,'yscale','log','YColor',grey)
+set(gca,'yscale','log')
 hold off;
 grid on;
 xlabel(gca,'s (m)','fontsize',14);
 ylabel(gca,'\epsilon_{geometric} (\mu m)','fontsize',14);
 xlim([0 max(x_)]);
-legend([h1 h2 h3], 'GEANT4 results','PAC07, N. Kirby et al.', 'NIMA, G. Xia et al.');
-
-%ylim([0 1e2]);
-%%
-figure(1)
-[haxes, hline1, hline2] = plotyy(x_(1:length(emitt)),emitt*1e6,x,E,'semilogy','plot');
-hold(haxes(1),'on');
-h2 = errorbar(haxes(1),x_,emitt*1e6, err*1e6,'ob');
-%h3 = errorbar(haxes(1),x_(1:length(emitt)),emitt_growth(1:length(emitt))*1e6,err,'mo');
-% %%% THEORY
-h4 = plot(haxes(1),x_(),emitt_theory()*1e6,'--k');
-h5 = plot(haxes(1),x_(),emitt_theory2()*1e6,'--or');
-hold(haxes(1),'off');
-
-hold(haxes(2),'on');
-h1 = plot(haxes(2),x_,E_,'go','linewidth',1);
-hold(haxes(2),'off');
-% %%%%%%%%%%%%%
-xlabel(haxes(2),'s (m)','fontsize',14);
-ylabel(haxes(1),'\epsilon (geometric) (\mu m)','fontsize',14);
-ylabel(haxes(2),'E (GeV) ','fontsize',14);
-set(hline1,'linestyle','o','linewidth',2);
-set(hline2,'linestyle',':','linewidth',1);
-grid on;
-legend([h2 h3 h4 h5], '\epsilon','\Delta \epsilon','PAC07, N. Kirby et al.', 'O. Mete et al.');
-xlim([0 max(x_)]);
-%ylim([0 1e-1]);
-
+%legend([h1 h2 h3], 'GEANT4 results','PAC07, N. Kirby et al.', 'Section 2, Eq. 7');
+legend([h1 h3 h4], 'GEANT4 results', 'Theory', 'Theory with normalised \Delta\epsilon');
+%ylim([1e-25 1e5]);
 
 
 

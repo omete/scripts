@@ -5,8 +5,9 @@ close all;
 clear;
 clc;
 
-run_num = 13;
-fileID = fopen(['run_distnew4_step0' num2str(run_num) '_primary.txt']);
+run_num = 1;
+fileID = fopen(['run_distnew4_v01_primary.txt']);
+%fileID = fopen('prometheus_ppt_primary.txt');
 formatSpec = '%f %f %f %f %f %f %f %f %s %s';
 Data = textscan(fileID, formatSpec);
 fclose(fileID);
@@ -41,9 +42,9 @@ sfig = 1; %  to save figures
 
 indx = length(StepLength);
 % give the longitudinal coordinate of the selected slice -- the last z point of the simulation.
-%slice_ini = find(Step == 0 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at initial position
+%PROMETHEUS%slice_ini = find(Step == 0 & (abs(Xmm.^2 + Ymm.^2) <= 0.075));    % indices of primaries at initial position
 slice_ini = find((Step == 0) & (Zmm == 0) & (abs(Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at initial position
-%slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
+%PROMETHEUS%slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm.^2 + Ymm.^2) <= 0.025));    % indices of primaries at final position
 slice_f   = find(ismember(Shape1,'OutOfWorld') & (abs(Xmm.^2 + Ymm.^2) <= 0.1));    % indices of primaries at final position
 %slice_f   = find(Zmm == 5e+02 & (abs(Xmm) <= 0.1) & (abs(Ymm) <= 0.1));    % indices of primaries at final position
 % Calculate the final angles of the primary particles at the initial and
@@ -54,7 +55,7 @@ num_final = max(size(slice_f));  %number of final particles
 
 % Calculate mean initial angles from first snum sample step
 % Final angle of primaries at initial position
-snum = 49; 
+snum = 1; 
 for i=1:num_ini
     for j=1:snum %collect samples to calculate mean angle for each particle
         sangle_ini(i,j) = (Xmm(slice_ini(i)+1+j-1)-Xmm(slice_ini(i)+j-1)) / StepLength(slice_ini(i)+1+j-1);
@@ -106,20 +107,23 @@ if (sfig == 1)
 end
 
 figure(2)
-h2 = plot(x_f*1e3,y_f*1e3,'ob','linewidth',2)
+h2 = plot(x_f*1e3,y_f*1e3,'.b','linewidth',2)
 hold on;
-h1 = plot(x_ini*1e3,y_ini*1e3,'or','linewidth',2)
+h1 = plot(x_ini*1e3,y_ini*1e3,'.r','linewidth',2)
+plot(x_f*1e3,y_f*1e3,'.b','linewidth',2)
 xlabel('x position (mm)')
 ylabel('y position (mm)')
 legend([h1 h2],'Initial','Final')
+%xlim([-25 25])
+%ylim([-25 25])
 if (sfig == 1)
     saveas(gca,['xyif' num2str(run_num) '.eps'],'epsc')
 end
 
 figure(3)
-plot(x_f*1e3,angle_f*1e3,'bo')
+plot(x_f*1e3,angle_f*1e3,'b.')
 hold on;
-plot(x_ini*1e3,angle_ini*1e3,'ro')
+plot(x_ini*1e3,angle_ini*1e3,'r.')
 hold off;
 xlabel('x  (mm)')
 ylabel('xp  (mrad)')

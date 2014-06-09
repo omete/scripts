@@ -1,6 +1,6 @@
 %%
-num1=slice_ini(10):slice_f(10);
-num2 = slice_f;
+%num1=slice_ini;
+num1 = slice_f;
 figure(1);
 plot3(Zmm(num1)*1e3,Xmm(num1)*1e3,Ymm(num1)*1e3,'-ob')
 hold on;
@@ -12,6 +12,9 @@ zlabel('y (mm)')
 grid on;
 pbaspect([10 1 1])
 
+%%
+figure(10)
+plot(Xmm(slice_f),Ymm(slice_f),'.b')
 
 
 %%

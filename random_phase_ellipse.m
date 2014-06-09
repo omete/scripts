@@ -62,11 +62,13 @@ disp(['Beta: ' num2str(beta0)]);
 disp(['Alpha: ' num2str(alpha0)]);
 disp(['Gamma: ' num2str(gamma0)]);
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+%%
 figure(30)
-h20 = plot(x,xp,'o');
+h20 = plot(x*1e6,xp*1e6,'o');
 %legend(['\epsilon: ' num2str(emitt0) ', \beta: ' num2str(beta0) ', \alpha: ' num2str(alpha0)]);
-legend(['\epsilon: ' num2str(round(emitt0))]);
+legend(['\epsilon: ' num2str(emitt0*1e12) ' \pi-nm']);
+ylabel('x\prime (\mu rad)','fontsize',14)
+xlabel('x (\mu m)','fontsize',14)
 title('Initial emittance generated for Geant4 simulations.')
 %%
 saveas(h20,['initial_emitt_' num2str(x0*1000) '_' num2str(xp0*1000) '.fig']);
